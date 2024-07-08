@@ -1,7 +1,8 @@
 //! # LimitedQueue
-//! 
-//! `LimitedQueue<T>` overrides the oldest data
-//! if trying to push data when queue is full.
+//!
+//! `LimitedQueue<T>` is a limited queue that
+//! overrides the oldest data if trying to
+//! push a data when the queue is full.
 //!
 //! All operations are of `O(1)` complexity,
 //! except the constructor with `O(Vec::with_capacity)`.
@@ -28,9 +29,9 @@ use std::mem::take;
 ///     assert_eq!(element.clone(), n + 5); // 5, 6, 7, 8, 9
 /// }
 /// ```
-/// 
+///
 /// # Error
-/// 
+///
 /// For indexing, no bound check will occur, so please check
 /// the size of the queue with `len` method before subscription.
 #[derive(Debug)]
@@ -47,13 +48,13 @@ impl<T: Default> LimitedQueue<T> {
     /// use limited_queue::LimitedQueue;
     ///
     /// let mut q = LimitedQueue::with_capacity(2);
-    /// 
+    ///
     /// assert_eq!(q.push(1), None);
     /// assert_eq!(q.push(2), None);
-    /// 
+    ///
     /// // first element popped since the capacity is 2
     /// assert_eq!(q.push(3), Some(1));
-    /// 
+    ///
     /// assert_eq!(q.peek(), Some(&2));
     /// assert_eq!(q.pop(), Some(2));
     /// assert_eq!(q.peek(), Some(&3));
