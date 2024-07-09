@@ -203,6 +203,18 @@ impl<T: Default> LimitedQueue<T> {
     // }
 
     /// `O(1)` method to (lazily) clear all the elements
+    /// 
+    /// ```
+    /// use limited_queue::LimitedQueue;
+    ///
+    /// let mut q = LimitedQueue::with_capacity(5);
+    /// for i in 0..10 {
+    ///     q.push(i);
+    /// }
+    /// q.clear();
+    /// assert_eq!(q.peek(), None);
+    /// assert_eq!(q.is_empty(), true);
+    /// ```
     #[inline]
     pub fn clear(&mut self) {
         self.front = 0;
