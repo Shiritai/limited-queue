@@ -14,7 +14,7 @@ There is a similar library [`circular-queue`](https://github.com/YaLTeR/circular
 |Element trait bound|`Default`|-|
 |`push`, size-related methods|✅|✅|
 |`peek`, `pop` support|✅|❌|
-|Indexing|✅<br>- front: `0`<br>- rear: `capacity`<br>- optionally mutable|❌|
+|Indexing|✅<br>- `0 ~ len`<br>- support `[idx]`<br>- support `get(idx)`<br>- optionally mutable (`[idx]`)|❌|
 |Iterator|✅<br>- front to rear|✅<br>- both ways<br>- optionally mutable|
 |`clear` complexity|`O(1)`|`O(Vec::clear)`|
 |`serde` support|❌ (TODO)|✅|

@@ -34,6 +34,8 @@ use std::mem::take;
 ///
 /// For indexing, no bound check will occur, so please check
 /// the size of the queue with `len` method before subscription.
+/// 
+/// If you need boundary check, please use `get` method.
 #[derive(Debug)]
 pub struct LimitedQueue<T> {
     q: Vec<T>,
@@ -73,7 +75,15 @@ impl<T: Default> LimitedQueue<T> {
 
     /// Get the element at position `idx`,
     /// a.k.a. the position from the start of queue
-    // #[inline]
+    /// 
+    /// ```
+    /// use limited_queue::LimitedQueue;
+    ///
+    /// let mut q = LimitedQueue::with_capacity(2);
+    /// q.push(1);
+    /// assert_eq!(q.get(100), None);
+    /// ```
+    #[inline]
     pub fn get(&self, idx: usize) -> Option<&T> {
         if idx >= self.front {
             None
