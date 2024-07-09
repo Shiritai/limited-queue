@@ -1,6 +1,6 @@
 # Limited Queue
 
-Circular queue that overrides the oldest data if trying to push data when queue is full.
+A circular queue that overrides the oldest data if trying to push a data when the queue is full.
 
 All operations are of **`O(1)`** complexity, except the constructor with `O(Vec::with_capacity)`.
 
