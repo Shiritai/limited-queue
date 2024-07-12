@@ -2,7 +2,7 @@
 
 [![Crates.io Version](https://img.shields.io/crates/v/limited-queue.svg)](https://crates.io/crates/limited-queue)
 ![GitHub top language](https://img.shields.io/github/languages/top/Shiritai/limited-queue)
-![GitHub CI Status](https://img.shields.io/github/actions/workflow/status/Shiritai/limited-queue/.github/workflows/rust.yml)
+![GitHub CI Status](https://img.shields.io/github/actions/workflow/status/Shiritai/limited-queue/.github/workflows/ci.yml)
 [![Crates.io Downloads](https://img.shields.io/crates/d/limited-queue.svg)](https://crates.io/crates/limited-queue)
 [![License](https://img.shields.io/github/license/Shiritai/limited-queue)](LICENSE)
 
