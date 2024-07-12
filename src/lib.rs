@@ -305,6 +305,8 @@ impl<'a, T> Iterator for LimitedQueueIterator<'a, T> {
 
 #[cfg(test)]
 mod tests {
+    use std::panic;
+
     use rand::Rng;
 
     use crate::LimitedQueue;
@@ -317,6 +319,7 @@ mod tests {
         for (i, pr) in (0..10).zip(push_ret) {
             assert_eq!(q.push(i), pr);
         }
+        assert_eq!(q.len(), 5);
         for (n, element) in q.iter().enumerate() {
             assert_eq!(element.clone(), q[n]); // 5, 6, 7, 8, 9
             assert_eq!(element.clone(), n + 5); // 5, 6, 7, 8, 9
@@ -325,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_change_size() {
-        const MAX_SZ: usize = 100;
+        const MAX_SZ: usize = 25;
         let mut q: LimitedQueue<i32> = crate::LimitedQueue::with_capacity(MAX_SZ);
         let mut sz = 0;
         let mut rng = rand::thread_rng();
@@ -347,7 +350,7 @@ mod tests {
                     assert!(match sz {
                         0 => q.is_empty() && q.pop().is_none() && q.peek().is_none(),
                         MAX_SZ => q.is_full(),
-                        _ => sz == q.len(),
+                        _ => sz == q.len() && sz < MAX_SZ,
                     });
                 }
             };
@@ -361,11 +364,25 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_invalid_indexing() {
+        // shadow out panic message for unwind in the loop
+        let old_hook = panic::take_hook();
+        panic::set_hook(Box::new(|_info| {}));
+
         let mut q = LimitedQueue::with_capacity(5);
         q.push(1);
-        q[100];
+        for i in 5..100 {
+            let invalid_access = || q[i];
+            let should_be_false = panic::catch_unwind(invalid_access).is_err();
+            if !should_be_false {
+                // reset panic hook to show error message
+                panic::set_hook(old_hook);
+                // panic with reason
+                panic!("Indexing with idx: {} cannot trigger panic.", i);
+            }
+        }
+
+        panic::set_hook(old_hook);
     }
 
     #[test]
