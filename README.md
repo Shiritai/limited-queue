@@ -28,3 +28,7 @@ There is a similar library [`circular-queue`](https://github.com/YaLTeR/circular
 |`serde` support|❌ (TODO)|✅|
 
 We welcome any kinds of contributions, please don't be hesitate to submit issues & PRs.
+
+## Setup
+
+Please run `scripts/setup.sh` to setup for committing. Currently, the script registers a git pre-commit hook.
