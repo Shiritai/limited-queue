@@ -34,7 +34,7 @@ use std::mem::take;
 ///
 /// For indexing, no bound check will occur, so please check
 /// the size of the queue with `len` method before subscription.
-/// 
+///
 /// If you need boundary check, please use `get` method.
 #[derive(Debug)]
 pub struct LimitedQueue<T> {
@@ -75,7 +75,7 @@ impl<T: Default> LimitedQueue<T> {
 
     /// Get the element at position `idx`,
     /// a.k.a. the position from the start of queue
-    /// 
+    ///
     /// ```
     /// use limited_queue::LimitedQueue;
     ///
@@ -143,10 +143,13 @@ impl<T: Default> LimitedQueue<T> {
         if self.is_full() {
             popped = self.pop();
         }
-        if self.q.len() != self.q.capacity() {
+        if self.q.len() == self.rear {
+            // if the vector is shorter than capacity
             self.q.push(ele);
-        } else {
+        } else if self.q.len() > self.rear {
             self.q[self.rear] = ele;
+        } else {
+            panic!("[limited-queue::push] Error, bad push position");
         }
         self.rear = self.next_idx(self.rear);
         popped
@@ -203,7 +206,7 @@ impl<T: Default> LimitedQueue<T> {
     // }
 
     /// `O(1)` method to (lazily) clear all the elements
-    /// 
+    ///
     /// ```
     /// use limited_queue::LimitedQueue;
     ///
@@ -320,5 +323,26 @@ mod tests {
         let mut q = LimitedQueue::with_capacity(5);
         q.push(1);
         q[100];
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut q = LimitedQueue::with_capacity(10);
+        for _ in 0..3 {
+            q.push(1);
+        }
+        assert_eq!(q.len(), 3);
+        assert_eq!(q.pop(), Some(1));
+        assert_eq!(q.len(), 2);
+        q.clear();
+        assert_eq!(q.len(), 0);
+        for _ in 0..3 {
+            q.push(1);
+        }
+        assert_eq!(q.len(), 3);
+        assert_eq!(q.pop(), Some(1));
+        assert_eq!(q.len(), 2);
+        q.clear();
+        assert_eq!(q.len(), 0);
     }
 }
