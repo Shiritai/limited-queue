@@ -7,7 +7,7 @@
 //! All operations are of `O(1)` complexity,
 //! except the constructor with `O(Vec::with_capacity)`.
 
-use std::mem::take;
+use std::mem::{replace, take};
 
 /// A circular queue that overrides the oldest data
 /// if trying to push data when queue is full.
@@ -41,9 +41,10 @@ pub struct LimitedQueue<T> {
     q: Vec<T>,
     front: usize,
     rear: usize,
+    sz: usize,
 }
 
-impl<T: Default> LimitedQueue<T> {
+impl<T> LimitedQueue<T> {
     /// Vec-like constructor
     ///
     /// ```
@@ -67,9 +68,10 @@ impl<T: Default> LimitedQueue<T> {
     #[inline]
     pub fn with_capacity(cap: usize) -> LimitedQueue<T> {
         LimitedQueue {
-            q: Vec::with_capacity(cap + 1),
+            q: Vec::with_capacity(cap),
             front: 0usize,
             rear: 0usize,
+            sz: 0usize,
         }
     }
 
@@ -89,28 +91,6 @@ impl<T: Default> LimitedQueue<T> {
             None
         } else {
             Some(&self[idx])
-        }
-    }
-
-    /// Pop the first element from queue
-    ///
-    /// ```
-    /// use limited_queue::LimitedQueue;
-    ///
-    /// let mut q = LimitedQueue::with_capacity(1);
-    ///
-    /// q.push(1234);
-    /// assert_eq!(q.pop(), Some(1234));
-    /// assert_eq!(q.pop(), None);
-    /// ```
-    #[inline]
-    pub fn pop(&mut self) -> Option<T> {
-        if self.is_empty() {
-            None
-        } else {
-            let ret = take(&mut self.q[self.front]);
-            self.front = self.next_idx(self.front);
-            Some(ret)
         }
     }
 
@@ -141,15 +121,21 @@ impl<T: Default> LimitedQueue<T> {
     pub fn push(&mut self, ele: T) -> Option<T> {
         let mut popped = None;
         if self.is_full() {
-            popped = self.pop();
-        }
-        if self.q.len() == self.rear {
-            // if the vector is shorter than capacity
-            self.q.push(ele);
-        } else if self.q.len() > self.rear {
-            self.q[self.rear] = ele;
+            // popped = self.pop();
+            // use `replace` so no implicit `Default` will be called
+            popped = Some(replace(&mut self.q[self.rear], ele));
+            // and move forth the front idx to simulate `pop` operation
+            self.front = self.next_idx(self.front);
         } else {
-            panic!("[limited-queue::push] Error, bad push position");
+            if self.q.len() == self.rear && self.q.len() < self.q.capacity() {
+                // if the vector is shorter than capacity
+                self.q.push(ele);
+            } else if self.q.len() > self.rear {
+                self.q[self.rear] = ele;
+            } else {
+                panic!("[limited-queue::push] Error, bad push position");
+            }
+            self.sz += 1;
         }
         self.rear = self.next_idx(self.rear);
         popped
@@ -163,17 +149,33 @@ impl<T: Default> LimitedQueue<T> {
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.front == self.rear
+        self.sz == 0
     }
 
     #[inline]
     pub fn is_full(&self) -> bool {
-        self.next_idx(self.rear) == self.front
+        self.sz == self.q.capacity()
     }
 
+    /// Get queue length
+    ///
+    /// ```
+    /// use limited_queue::LimitedQueue;
+    ///
+    /// let mut q = LimitedQueue::with_capacity(3);
+    ///
+    /// q.push(1234);
+    /// assert_eq!(q.len(), 1);
+    /// q.push(1234);
+    /// assert_eq!(q.len(), 2);
+    /// q.push(1234);
+    /// assert_eq!(q.len(), 3);
+    /// q.push(1234);
+    /// assert_eq!(q.len(), 3);
+    /// ```
     #[inline]
     pub fn len(&self) -> usize {
-        (self.rear + self.q.capacity() - self.front) % self.q.capacity()
+        self.sz
     }
 
     /// To traverse all the elements in
@@ -222,6 +224,36 @@ impl<T: Default> LimitedQueue<T> {
     pub fn clear(&mut self) {
         self.front = 0;
         self.rear = 0;
+        self.sz = 0;
+    }
+}
+
+/// Optionally provide `pop` method for
+/// types that implements `Default` trait
+impl<T: Default> LimitedQueue<T> {
+    /// Pop the first element from queue,
+    /// will replace the element in queue with
+    /// the `Default` value of the element
+    ///
+    /// ```
+    /// use limited_queue::LimitedQueue;
+    ///
+    /// let mut q = LimitedQueue::with_capacity(1);
+    ///
+    /// q.push(1234);
+    /// assert_eq!(q.pop(), Some(1234));
+    /// assert_eq!(q.pop(), None);
+    /// ```
+    #[inline]
+    pub fn pop(&mut self) -> Option<T> {
+        if self.is_empty() {
+            None
+        } else {
+            let ret = take(&mut self.q[self.front]);
+            self.front = self.next_idx(self.front);
+            self.sz -= 1;
+            Some(ret)
+        }
     }
 }
 
@@ -241,12 +273,12 @@ impl<T> std::ops::IndexMut<usize> for LimitedQueue<T> {
     }
 }
 
-pub struct LimitedQueueIterator<'a, T: Default> {
+pub struct LimitedQueueIterator<'a, T> {
     lq: &'a LimitedQueue<T>,
     idx: usize,
 }
 
-impl<'a, T: Default> Iterator for LimitedQueueIterator<'a, T> {
+impl<'a, T> Iterator for LimitedQueueIterator<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -254,7 +286,7 @@ impl<'a, T: Default> Iterator for LimitedQueueIterator<'a, T> {
         if cur_idx == self.lq.len() {
             None
         } else {
-            self.idx = self.lq.next_idx(self.idx);
+            self.idx += 1;
             Some(&self.lq[cur_idx])
         }
     }
