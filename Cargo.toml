@@ -1,6 +1,6 @@
 [package]
 name = "limited-queue"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 authors = ["Tzu-Ching Yang"]
 description = "a limited queue that overrides the oldest data if trying to push a data when the queue is full."
