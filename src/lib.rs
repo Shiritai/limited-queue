@@ -226,6 +226,15 @@ impl<T> LimitedQueue<T> {
         self.rear = 0;
         self.sz = 0;
     }
+
+    /// private method of boundary check and indexing
+    #[inline]
+    fn indexing(&self, idx: usize) -> usize {
+        if idx >= self.sz {
+            panic!("Invalid subscription index: {}", idx)
+        }
+        (idx + self.front) % self.q.capacity()
+    }
 }
 
 /// Optionally provide `pop` method for
@@ -260,15 +269,17 @@ impl<T: Default> LimitedQueue<T> {
 impl<T> std::ops::Index<usize> for LimitedQueue<T> {
     type Output = T;
 
+    #[inline]
     fn index(&self, idx: usize) -> &Self::Output {
-        let real_idx = (idx + self.front) % self.q.capacity();
+        let real_idx = self.indexing(idx);
         &self.q[real_idx]
     }
 }
 
 impl<T> std::ops::IndexMut<usize> for LimitedQueue<T> {
+    #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        let real_idx = (idx + self.front) % self.q.capacity();
+        let real_idx = self.indexing(idx);
         &mut self.q[real_idx]
     }
 }
