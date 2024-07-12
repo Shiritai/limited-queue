@@ -14,7 +14,7 @@ The generic type `T` needs to have `Default` trait for `pop` operation, since we
 
 There is a similar library [`circular-queue`](https://github.com/YaLTeR/circular-queue) I found, but without the basic `peek` and `pop` operations. The comparison for now is listed below:
 
-||[`LimitedQueue`](.)| [`circular-queue`](https://github.com/YaLTeR/circular-queue) |
+||[`LimitedQueue`](https://github.com/Shiritai/limited-queue)| [`circular-queue`](https://github.com/YaLTeR/circular-queue) |
 |:-:|:-|:-|
 |Algorithm|circular queue (front-rear)|circular queue (based on `len` and `capacity` provided by `Vec`)|
 |Element trait bound|`Default`|-|
