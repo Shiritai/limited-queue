@@ -1,5 +1,11 @@
 # Limited Queue
 
+[![Crates.io Version](https://img.shields.io/crates/v/limited-queue.svg)](https://crates.io/crates/limited-queue)
+![GitHub top language](https://img.shields.io/github/languages/top/Shiritai/limited-queue)
+![GitHub CI Status](https://img.shields.io/github/actions/workflow/status/Shiritai/limited-queue/.github/workflows/rust.yml)
+[![Crates.io Downloads](https://img.shields.io/crates/d/limited-queue.svg)](https://crates.io/crates/limited-queue)
+[![License](https://img.shields.io/github/license/Shiritai/limited-queue)](LICENSE)
+
 A circular queue that overrides the oldest data if trying to push a data when the queue is full.
 
 All operations are of **`O(1)`** complexity, except the constructor with `O(Vec::with_capacity)`.
@@ -8,7 +14,7 @@ The generic type `T` needs to have `Default` trait for `pop` operation, since we
 
 There is a similar library [`circular-queue`](https://github.com/YaLTeR/circular-queue) I found, but without the basic `peek` and `pop` operations. The comparison for now is listed below:
 
-||[`LimitedQueue`](.)| [`circular-queue`]((https://github.com/YaLTeR/circular-queue)) |
+||[`LimitedQueue`](.)| [`circular-queue`](https://github.com/YaLTeR/circular-queue) |
 |:-:|:-|:-|
 |Algorithm|circular queue (front-rear)|circular queue (based on `len` and `capacity` provided by `Vec`)|
 |Element trait bound|`Default`|-|
