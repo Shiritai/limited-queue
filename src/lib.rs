@@ -415,6 +415,22 @@ mod tests {
 
     use crate::LimitedQueue;
 
+    // Helper struct that doesn't implement Default
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    struct NoDefault(i32);
+
+    #[test]
+    fn test_pop_no_default() {
+        let mut q = LimitedQueue::with_capacity(2);
+        q.push(NoDefault(1));
+        q.push(NoDefault(2));
+        assert_eq!(q.push(NoDefault(3)), Some(NoDefault(1)));
+        assert_eq!(q.peek(), Some(&NoDefault(2)));
+        assert_eq!(q.pop(), Some(NoDefault(2)));
+        assert_eq!(q.pop(), Some(NoDefault(3)));
+        assert_eq!(q.pop(), None);
+    }
+
     #[test]
     fn test_iter() {
         let mut q = crate::LimitedQueue::with_capacity(5);
@@ -428,6 +444,58 @@ mod tests {
             assert_eq!(element.clone(), q[n]); // 5, 6, 7, 8, 9
             assert_eq!(element.clone(), n + 5); // 5, 6, 7, 8, 9
         }
+
+        // test DoubleEndedIterator
+        for (n, element) in q.iter().rev().enumerate() {
+            assert_eq!(element.clone(), q[4 - n]); // 5, 6, 7, 8, 9
+            assert_eq!(element.clone(), 9 - n); // 5, 6, 7, 8, 9
+        }
+    }
+
+    #[test]
+    fn test_iter_mut() {
+        let mut q = LimitedQueue::with_capacity(5);
+        for i in 0..5 {
+            q.push(i); // 0, 1, 2, 3, 4
+        }
+
+        for element in q.iter_mut() {
+            *element += 10;
+        }
+
+        // Queue should now contain 10, 11, 12, 13, 14
+        for (n, element) in q.iter().enumerate() {
+            assert_eq!(*element, n + 10);
+        }
+
+        // Test push overflow with modified data
+        assert_eq!(q.push(99), Some(10)); // pops 10
+        assert_eq!(q.peek(), Some(&11));
+    }
+
+    #[test]
+    fn test_double_ended_iter_mut() {
+        let mut q = LimitedQueue::with_capacity(5);
+        for i in 0..5 {
+            q.push(i); // 0, 1, 2, 3, 4
+        }
+
+        // Modify from both ends
+        let mut iter_mut = q.iter_mut();
+        *iter_mut.next().unwrap() = 100; // 0 -> 100
+        *iter_mut.next_back().unwrap() = 400; // 4 -> 400
+        *iter_mut.next().unwrap() = 200; // 1 -> 200
+        *iter_mut.next_back().unwrap() = 300; // 3 -> 300
+                                              // 2 is untouched
+
+        // Check final state
+        let mut iter = q.iter();
+        assert_eq!(iter.next(), Some(&100));
+        assert_eq!(iter.next(), Some(&200));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&300));
+        assert_eq!(iter.next(), Some(&400));
+        assert_eq!(iter.next(), None);
     }
 
     #[test]
@@ -464,7 +532,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_zero_len_invalid_indexing() {
-        LimitedQueue::with_capacity(0)[0]
+        LimitedQueue::<i32>::with_capacity(0)[0];
     }
 
     #[test]
@@ -492,21 +560,113 @@ mod tests {
     #[test]
     fn test_clear() {
         let mut q = LimitedQueue::with_capacity(10);
+
+        // Test clear on empty
+        q.clear();
+        assert_eq!(q.len(), 0);
+        assert!(q.is_empty());
+
+        // Test clear on partially full
         for _ in 0..3 {
             q.push(1);
         }
         assert_eq!(q.len(), 3);
-        assert_eq!(q.pop(), Some(1));
-        assert_eq!(q.len(), 2);
         q.clear();
         assert_eq!(q.len(), 0);
-        for _ in 0..3 {
-            q.push(1);
+        assert_eq!(q.peek(), None);
+        assert!(q.is_empty());
+
+        // Test clear on full
+        for i in 0..10 {
+            q.push(i);
         }
-        assert_eq!(q.len(), 3);
-        assert_eq!(q.pop(), Some(1));
-        assert_eq!(q.len(), 2);
+        assert!(q.is_full());
         q.clear();
+        assert!(q.is_empty());
         assert_eq!(q.len(), 0);
+        assert_eq!(q.peek(), None);
+
+        // Test functionality after clear
+        assert_eq!(q.push(100), None);
+        assert_eq!(q.len(), 1);
+        assert_eq!(q.peek(), Some(&100));
+        assert_eq!(q.pop(), Some(100));
+        assert_eq!(q.len(), 0);
+        assert!(q.is_empty());
+    }
+
+    #[test]
+    fn test_capacity_one() {
+        let mut q = LimitedQueue::with_capacity(1);
+        assert!(q.is_empty());
+        assert_eq!(q.push(1), None);
+        assert!(q.is_full());
+        assert_eq!(q.peek(), Some(&1));
+        assert_eq!(q.push(2), Some(1)); // Overwrite
+        assert!(q.is_full());
+        assert_eq!(q.peek(), Some(&2));
+        assert_eq!(q.pop(), Some(2));
+        assert!(q.is_empty());
+        assert_eq!(q.peek(), None);
+        assert_eq!(q.pop(), None);
+        assert_eq!(q.push(3), None);
+        assert_eq!(q.len(), 1);
+        assert_eq!(q.peek(), Some(&3));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_capacity_zero_push_panic() {
+        let mut q = LimitedQueue::<i32>::with_capacity(0);
+        q.push(1); // This should panic
+    }
+
+    #[test]
+    fn test_get_method() {
+        let mut q = LimitedQueue::with_capacity(3);
+        assert_eq!(q.get(0), None); // Empty
+        assert_eq!(q.get(1), None);
+
+        q.push(10); // 10
+        q.push(20); // 10, 20
+        assert_eq!(q.get(0), Some(&10));
+        assert_eq!(q.get(1), Some(&20));
+        assert_eq!(q.get(2), None); // Out of bounds (len)
+
+        q.push(30); // 10, 20, 30 (full)
+        assert_eq!(q.get(2), Some(&30));
+        assert_eq!(q.get(3), None);
+
+        q.push(40); // 20, 30, 40 (wrapped)
+        assert_eq!(q.get(0), Some(&20));
+        assert_eq!(q.get(1), Some(&30));
+        assert_eq!(q.get(2), Some(&40));
+        assert_eq!(q.get(3), None); // Out of bounds (len)
+    }
+
+    #[test]
+    fn test_iter_empty() {
+        let mut q = LimitedQueue::<i32>::with_capacity(5);
+        assert_eq!(q.iter().next(), None);
+        assert_eq!(q.iter().next_back(), None);
+        assert_eq!(q.iter_mut().next(), None);
+        assert_eq!(q.iter_mut().next_back(), None);
+    }
+
+    #[test]
+    fn test_iter_mixed() {
+        let mut q = LimitedQueue::with_capacity(5);
+        for i in 0..5 {
+            q.push(i); // 0, 1, 2, 3, 4
+        }
+
+        let mut iter = q.iter();
+        assert_eq!(iter.next(), Some(&0));
+        assert_eq!(iter.next_back(), Some(&4));
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next_back(), Some(&3));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
     }
 }
