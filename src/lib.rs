@@ -7,7 +7,10 @@
 //! All operations are of `O(1)` complexity,
 //! except the constructor with `O(Vec::with_capacity)`.
 
-use std::mem::{replace, take};
+use std::{
+    marker::PhantomData,
+    mem::{replace, take},
+};
 
 /// A circular queue that overrides the oldest data
 /// if trying to push data when queue is full.
@@ -203,13 +206,40 @@ impl<T> LimitedQueue<T> {
         }
     }
 
-    // #[inline]
-    // pub fn iter_mut(&self) -> LimitedQueueIterator<T> {
-    //     LimitedQueueIterator {
-    //         lq: self,
-    //         idx: self.front,
-    //     }
-    // }
+    /// Returns a mutable iterator over the queue.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use limited_queue::LimitedQueue;
+    ///
+    /// let mut q = LimitedQueue::with_capacity(3);
+    /// q.push(1);
+    /// q.push(2);
+    ///
+    /// for element in q.iter_mut() {
+    ///     *element *= 2;
+    /// }
+    ///
+    /// assert_eq!(q.pop(), Some(2));
+    /// assert_eq!(q.pop(), Some(4));
+    /// assert_eq!(q.pop(), None);
+    /// ```
+    #[inline]
+    pub fn iter_mut(&mut self) -> LimitedQueueIteratorMut<T> {
+        let len = self.sz;
+        let cap = self.q.capacity();
+        let front = self.front;
+        let q_ptr = self.q.as_mut_ptr(); // get raw pointer to Vec's buffer
+        LimitedQueueIteratorMut {
+            q_ptr,
+            front,
+            capacity: cap,
+            front_idx: 0,
+            back_idx: len,
+            _marker: PhantomData, // PhantomData for 'a lifetime
+        }
+    }
 
     /// `O(1)` method to (lazily) clear all the elements
     ///
@@ -311,6 +341,68 @@ impl<'a, T> DoubleEndedIterator for LimitedQueueIterator<'a, T> {
             self.back_idx -= 1;
             let cur_idx = self.back_idx;
             Some(&self.lq[cur_idx])
+        }
+    }
+}
+
+/// A mutable, double-ended iterator over a `LimitedQueue`.
+pub struct LimitedQueueIteratorMut<'a, T> {
+    q_ptr: *mut Option<T>, // raw pointer to the Vec's data
+    front: usize,          // internal Vec's front index
+    capacity: usize,
+    front_idx: usize,                // logical queue index (0..sz)
+    back_idx: usize,                 // logical queue index (0..sz)
+    _marker: PhantomData<&'a mut T>, // marker for 'a lifetime
+}
+
+impl<'a, T> Iterator for LimitedQueueIteratorMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.front_idx == self.back_idx {
+            None
+        } else {
+            let cur_idx = self.front_idx;
+            self.front_idx += 1;
+            let real_idx = (cur_idx + self.front) % self.capacity;
+
+            unsafe {
+                // get pointer to the real_idx-th element in Vec
+                let elem_ptr = self.q_ptr.add(real_idx);
+
+                // convert raw pointer back to an 'a lifetime mutable reference
+                // this is safe because:
+                // 1. _marker ensures 'a is the lifetime of LimitedQueueMutIterator
+                // 2. we ensure real_idx is within self.q.capacity()
+                // 3. cur_idx < self.sz, so this position must be Some(T)
+                let opt_ref = &mut *elem_ptr;
+
+                // .unwrap() is safe because
+                // logical index (cur_idx) < self.sz,
+                // which means self.q[real_idx] must be Some(T)
+                Some(opt_ref.as_mut().unwrap())
+            }
+        }
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for LimitedQueueIteratorMut<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.front_idx == self.back_idx {
+            None
+        } else {
+            // move index back
+            self.back_idx -= 1;
+            let cur_idx = self.back_idx;
+            let real_idx = (cur_idx + self.front) % self.capacity;
+
+            unsafe {
+                let elem_ptr = self.q_ptr.add(real_idx);
+                let opt_ref = &mut *elem_ptr;
+
+                // .unwrap() is also safe here
+                Some(opt_ref.as_mut().unwrap())
+            }
         }
     }
 }
