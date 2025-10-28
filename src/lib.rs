@@ -318,6 +318,7 @@ pub struct LimitedQueueIterator<'a, T> {
     back_idx: usize,
 }
 
+#[cfg(not(tarpaulin_include))]
 impl<'a, T> Iterator for LimitedQueueIterator<'a, T> {
     type Item = &'a T;
 

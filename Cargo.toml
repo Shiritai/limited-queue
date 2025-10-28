@@ -1,12 +1,19 @@
 [package]
 name = "limited-queue"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 authors = ["Tzu-Ching Yang"]
 description = "a limited queue that overrides the oldest data if trying to push a data when the queue is full."
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/Shiritai/limited-queue"
+keywords = ["queue", "circular", "ring", "buffer", "limited", "data-structures"]
+categories = ["data-structures", "algorithms"]
 
 [dependencies]
 
 [dev-dependencies]
 rand = "0.8.5"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
