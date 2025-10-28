@@ -38,7 +38,7 @@ use std::mem::{replace, take};
 /// If you need boundary check, please use `get` method.
 #[derive(Debug)]
 pub struct LimitedQueue<T> {
-    q: Vec<T>,
+    q: Vec<Option<T>>,
     front: usize,
     rear: usize,
     sz: usize,
@@ -111,7 +111,7 @@ impl<T> LimitedQueue<T> {
         if self.is_empty() {
             None
         } else {
-            Some(&self.q[self.front])
+            self.q[self.front].as_ref()
         }
     }
 
@@ -123,15 +123,15 @@ impl<T> LimitedQueue<T> {
         if self.is_full() {
             // popped = self.pop();
             // use `replace` so no implicit `Default` will be called
-            popped = Some(replace(&mut self.q[self.rear], ele));
+            popped = replace(&mut self.q[self.rear], Some(ele));
             // and move forth the front idx to simulate `pop` operation
             self.front = self.next_idx(self.front);
         } else {
             if self.q.len() == self.rear && self.q.len() < self.q.capacity() {
                 // if the vector is shorter than capacity
-                self.q.push(ele);
+                self.q.push(Some(ele));
             } else if self.q.len() > self.rear {
-                self.q[self.rear] = ele;
+                self.q[self.rear] = Some(ele);
             } else {
                 panic!("[limited-queue::push] Error, bad push position");
             }
@@ -235,14 +235,9 @@ impl<T> LimitedQueue<T> {
         }
         (idx + self.front) % self.q.capacity()
     }
-}
 
-/// Optionally provide `pop` method for
-/// types that implements `Default` trait
-impl<T: Default> LimitedQueue<T> {
     /// Pop the first element from queue,
-    /// will replace the element in queue with
-    /// the `Default` value of the element
+    /// will replace the element in queue
     ///
     /// ```
     /// use limited_queue::LimitedQueue;
@@ -261,7 +256,7 @@ impl<T: Default> LimitedQueue<T> {
             let ret = take(&mut self.q[self.front]);
             self.front = self.next_idx(self.front);
             self.sz -= 1;
-            Some(ret)
+            ret
         }
     }
 }
@@ -272,7 +267,7 @@ impl<T> std::ops::Index<usize> for LimitedQueue<T> {
     #[inline]
     fn index(&self, idx: usize) -> &Self::Output {
         let real_idx = self.indexing(idx);
-        &self.q[real_idx]
+        self.q[real_idx].as_ref().unwrap()
     }
 }
 
@@ -280,7 +275,7 @@ impl<T> std::ops::IndexMut<usize> for LimitedQueue<T> {
     #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         let real_idx = self.indexing(idx);
-        &mut self.q[real_idx]
+        self.q[real_idx].as_mut().unwrap()
     }
 }
 
