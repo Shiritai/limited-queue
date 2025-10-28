@@ -70,8 +70,14 @@ impl<T> LimitedQueue<T> {
     /// @param `cap` Capacity (limit size) of the queue
     #[inline]
     pub fn with_capacity(cap: usize) -> LimitedQueue<T> {
+        if cap == 0 {
+            panic!("Cannot create a LimitedQueue with zero capacity");
+        }
+        let mut q = Vec::with_capacity(cap);
+        q.resize_with(cap, Option::default);
+
         LimitedQueue {
-            q: Vec::with_capacity(cap),
+            q,
             front: 0usize,
             rear: 0usize,
             sz: 0usize,
@@ -130,14 +136,7 @@ impl<T> LimitedQueue<T> {
             // and move forth the front idx to simulate `pop` operation
             self.front = self.next_idx(self.front);
         } else {
-            if self.q.len() == self.rear && self.q.len() < self.q.capacity() {
-                // if the vector is shorter than capacity
-                self.q.push(Some(ele));
-            } else if self.q.len() > self.rear {
-                self.q[self.rear] = Some(ele);
-            } else {
-                panic!("[limited-queue::push] Error, bad push position");
-            }
+            let _ = std::mem::replace(&mut self.q[self.rear], Some(ele));
             self.sz += 1;
         }
         self.rear = self.next_idx(self.rear);
@@ -668,5 +667,39 @@ mod tests {
         assert_eq!(iter.next(), Some(&2));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next_back(), None);
+    }
+
+    #[test]
+    fn test_index_mut() {
+        let mut q = LimitedQueue::with_capacity(3);
+        q.push(1);
+        q.push(2); // q = [1, 2]
+
+        q[0] = 100; // Test IndexMut
+        q[1] = 200;
+
+        assert_eq!(q.get(0), Some(&100));
+        assert_eq!(q.get(1), Some(&200));
+    }
+
+    #[test]
+    fn test_debug_format() {
+        let mut q = LimitedQueue::with_capacity(3);
+        q.push(1);
+        q.push(2);
+
+        // Test whether debug works as expected
+        let formatted = format!("{:?}", q);
+        assert!(formatted.contains("LimitedQueue"));
+        assert!(formatted.contains("Some(1)"));
+        assert!(formatted.contains("Some(2)"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid subscription index: 1")]
+    fn test_indexing_panic_simple() {
+        let mut q = LimitedQueue::with_capacity(3);
+        q.push(1); // sz = 1
+        let _ = q[1]; // Accessing q[1] when sz=1 should panic
     }
 }
