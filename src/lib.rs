@@ -196,7 +196,11 @@ impl<T> LimitedQueue<T> {
     /// ```
     #[inline]
     pub fn iter(&self) -> LimitedQueueIterator<T> {
-        LimitedQueueIterator { lq: self, idx: 0 }
+        LimitedQueueIterator {
+            lq: self,
+            front_idx: 0,
+            back_idx: self.sz,
+        }
     }
 
     // #[inline]
@@ -281,18 +285,31 @@ impl<T> std::ops::IndexMut<usize> for LimitedQueue<T> {
 
 pub struct LimitedQueueIterator<'a, T> {
     lq: &'a LimitedQueue<T>,
-    idx: usize,
+    front_idx: usize,
+    back_idx: usize,
 }
 
 impl<'a, T> Iterator for LimitedQueueIterator<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let cur_idx = self.idx;
-        if cur_idx == self.lq.len() {
-            None
+        if self.front_idx == self.back_idx {
+            None // the end of iteration
         } else {
-            self.idx += 1;
+            let cur_idx = self.front_idx;
+            self.front_idx += 1;
+            Some(&self.lq[cur_idx])
+        }
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for LimitedQueueIterator<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.front_idx == self.back_idx {
+            None // the end of iteration
+        } else {
+            self.back_idx -= 1;
+            let cur_idx = self.back_idx;
             Some(&self.lq[cur_idx])
         }
     }
