@@ -87,7 +87,7 @@ impl<T> LimitedQueue<T> {
     /// ```
     #[inline]
     pub fn get(&self, idx: usize) -> Option<&T> {
-        if idx >= self.front {
+        if idx >= self.sz {
             None
         } else {
             Some(&self[idx])
