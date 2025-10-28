@@ -7,7 +7,7 @@ description = "a limited queue that overrides the oldest data if trying to push 
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/Shiritai/limited-queue"
-keywords = ["queue", "circular", "ring", "buffer", "limited", "data-structures"]
+keywords = ["circular", "queue", "limited", "data-structures"]
 categories = ["data-structures", "algorithms"]
 
 [dependencies]
